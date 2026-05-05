@@ -11,3 +11,6 @@ description = "gemconnect sits between Flask and Gemini, calls the API safely, a
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/DIVICODER/gemconnect-lib-"
