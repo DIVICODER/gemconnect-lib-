@@ -40,7 +40,15 @@ This makes connecting to the AI service, like a PDF to text extraction, feel lik
 Beginners who are really interested in the frontend connectivity with the AI service but get scared on seeing those errors and not knowing how to solve them.
 
 ---
+## Requirements
 
+Before using gemconnect, install the Gemini package:
+
+pip install google-genai
+
+gemconnect itself has no dependencies.
+The user is responsible for creating and passing the Gemini client.
+---
 ## Installation
 
 ```bash
