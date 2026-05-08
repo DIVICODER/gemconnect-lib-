@@ -177,12 +177,12 @@ def error_simplify(s):
     # Layer 1 — direct keyword match
     for k in keyword:
         if k.lower() in s_lower:
-            return f"{keyword[k]} Raw error: {s}"
+            return f"**{keyword[k]}**\n\nRaw technical error:\n{s}"
 
     # Layer 2 — synonym match
     for alias in synonyms:
        if alias.lower() in s_lower:    # ← add .lower() here
             mapped_key = synonyms[alias]
-            return f"{keyword[mapped_key]} Raw error: {s}"
+            return f"**{keyword[mapped_key]}**\n\nRaw technical error:\n{s}"
     # Nothing matched
-    return f"GemConnect could not simplify this error. Here is the raw error for you to search online: {s}"
+    return f"**GemConnect could not simplify this error.**\n\nHere is the raw error for you to search online:\n{s}"
