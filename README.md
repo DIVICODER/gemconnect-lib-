@@ -1,6 +1,6 @@
 # GemConnect
 
-gemconnect sits between Flask and Gemini, calls the API safely, and if anything goes wrong, translates the scary technical error into a simple message the beginner can understand and fix.
+**GemConnect sits between Flask and Gemini, calls the API safely, and if anything goes wrong, translates the scary technical error into a simple message the beginner can understand and fix.**
 
 ---
 
@@ -18,7 +18,7 @@ What I needed was an error document to understand each error. That problem led t
 
 ## What GemConnect Does
 
-GemConnect gets the scary error and then converts that to a human-understandable error for easy debugging.
+GemConnect gets the scary error and converts it into a human-understandable message for easy debugging.
 
 ```
 WITHOUT GemConnect:
@@ -28,37 +28,33 @@ WITH GemConnect:
 Flask → GemConnect → Gemini → ❌ Error?
                                     ↓
                         "Hey! Your API key looks wrong.
-                         Double check it here → GemBridge(api_key=...)"
+                         Go to aistudio.google.com/apikey and get a fresh one."
 ```
-
-This makes connecting to the AI service, like a PDF to text extraction, feel like a simple AI integrated frontend project rather than a difficult one.
 
 ---
 
 ## Who Is This For
 
-Beginners who are really interested in the frontend connectivity with the AI service but get scared on seeing those errors and not knowing how to solve them.
+Beginners who are really interested in frontend connectivity with AI services but get scared seeing those errors and not knowing how to solve them.
 
 ---
+
 ## Requirements
 
-Before using gemconnect, install the Gemini package:
+Before using GemConnect, install the Gemini package:
 
+```
 pip install google-genai
-
-gemconnect itself has no dependencies.
-The user is responsible for creating and passing the Gemini client.
----
-## Installation
-
-```bash
-pip install gemconnect
 ```
 
-You also need the Gemini package:
+GemConnect itself has zero dependencies. You are responsible for creating and passing the Gemini client.
 
-```bash
-pip install google-genai
+---
+
+## Installation
+
+```
+pip install gemconnect
 ```
 
 ---
@@ -79,111 +75,172 @@ print(result)
 
 ---
 
-## How It Works Inside
+## Input Validation
 
-```
-User writes ask_gemini()
-↓
-connector.py runs
-↓
-        try:
-        calls Gemini API with
-        prompt, client, model
-        ↓
-        ┌─────────────────┐
-        │                 │
-     SUCCESS            ERROR
-        │                 │
-        ↓                 ↓
-  response.text      scary error
-        │                 │
-        ↓                 ↓
-returned to user    errors.py translates it
-                          │
-                          ↓
-                    simple message
-                    returned to user
+GemConnect checks your inputs before even calling Gemini. If something is wrong it tells you immediately in plain English:
+
+```python
+ask_gemini(None, client, model)
+# → "Your prompt is None. Please pass a text string like ask_gemini('hello', client, model)."
+
+ask_gemini("", client, model)
+# → "Your prompt is empty. Please type something before sending."
+
+ask_gemini(["hello"], client, model)
+# → "Your prompt must be plain text. You passed a list instead of a string."
+
+ask_gemini(prompt, None, model)
+# → "Your Gemini client is None. Make sure you created it using genai.Client(api_key=...)."
+
+ask_gemini(prompt, client, None)
+# → "You forgot to pass a model name. Try ask_gemini(prompt, client, 'gemini-2.0-flash')."
+
+ask_gemini(prompt, client, "")
+# → "Your model name is empty. Try ask_gemini(prompt, client, 'gemini-2.0-flash')."
 ```
 
 ---
 
-## Real Project Example — PDF Summarizer
+## How It Works Inside
+
+```
+User writes ask_gemini()
+        ↓
+connector.py runs input checks
+        ↓
+        ┌─────────────────────────┐
+        │                         │
+  checks pass               checks fail
+        │                         │
+        ↓                         ↓
+  calls Gemini API        friendly message
+        │                  returned to user
+        ↓
+  ┌─────────────┐
+  │             │
+SUCCESS       ERROR
+  │             │
+  ↓             ↓
+response.text  errors.py
+  │             │
+  ↓             ↓ Layer 1 — keyword match
+returned      errors.py
+to user        │
+               ↓ Layer 2 — synonym match
+               │
+               ↓
+         simple message
+         returned to user
+```
+
+---
+
+## Real Project Example — Chatbot
 
 ```python
 # BEFORE GemConnect — scary errors possible
 response = client.models.generate_content(
     model="gemini-2.5-flash",
-    contents=prompt
+    contents=conversation
 )
-summary = response.text
+ai_reply = response.text
 
 
 # AFTER GemConnect — one line, errors handled
 from gemconnect import ask_gemini
 
-summary = ask_gemini(prompt, client, "gemini-2.5-flash")
+ai_reply = ask_gemini(conversation, client, "gemini-2.5-flash")
 ```
 
 ---
 
 ## What Errors GemConnect Covers
 
-These are real errors collected from real beginner projects:
+Every error message inside GemConnect was collected from real beginner projects. Two layers of matching make sure as many errors as possible are caught.
 
 ### Setup Errors
 ```
 ❌ jinja2.exceptions.TemplateNotFound
-✅ Flask cannot find your HTML file. Make sure your folder is named exactly templates.
+✅ Flask cannot find your HTML file. Make sure your HTML file is inside 
+   a folder named exactly 'templates' (no capital letters, no spaces).
 
 ❌ ERR_CONNECTION_REFUSED
-✅ Flask is not running. Check for the app.run() properly.
+✅ Your Flask server is not running. Go to your terminal and run your 
+   app.py file first, then try again.
 
 ❌ FutureWarning: google.generativeai has ended
-✅ Your Gemini package is outdated. Try to update to new package.
+✅ Your Gemini package is old. Open your terminal and run: 
+   pip install --upgrade google-generativeai
+```
+
+### Install Errors
+```
+❌ ModuleNotFoundError: No module named 'google.generativeai'
+✅ A required package is not installed. Open your terminal and run: 
+   pip install google-generativeai
 ```
 
 ### API Key Errors
 ```
 ❌ 401 Unauthorized
-✅ Unauthorized - check whether the credentials is valid, check whether
-   the url is misconfiguration or invalid/expired tokens.
+✅ Gemini does not recognize you. Your API key is either wrong, expired, 
+   or missing. Go to aistudio.google.com/apikey and get a fresh one.
+
+❌ API key not valid. Please pass a valid API key.
+✅ Your API key is wrong. Go to aistudio.google.com/apikey, copy your 
+   key again and paste it carefully — even one wrong character breaks it.
 ```
 
 ### Quota Errors
 ```
-❌ 429 RESOURCE_EXHAUSTED
-✅ Your project quota is exhausted. Create a brand new project
-   at aistudio.google.com/apikey.
+❌ RESOURCE_EXHAUSTED
+✅ You have used up all your free Gemini quota. Go to 
+   aistudio.google.com/apikey, create a brand new project and generate 
+   a new API key from there.
 
 ❌ 429 Too Many Requests
-✅ Too many requests sent, so wait for a short duration before retrying
-   as the model has no free tier now.
+✅ You sent too many requests too fast. Wait 30-60 seconds and try again.
 ```
 
 ### Model Errors
 ```
 ❌ 404 models/gemini-1.5-flash is not found
-✅ Model not found. Run gemconnect.list_models() to see whats available.
+✅ The model name you typed does not exist. Run list_models() to see the 
+   exact names and copy-paste one of those.
 ```
 
 ### Gemini Server Errors
 ```
-❌ 503 UNAVAILABLE
-✅ Too many people using it at the same time, so wait a few minutes and try again.
+❌ InternalServerError
+✅ Something crashed on Gemini's side — this is not your fault. 
+   Wait a minute and try the exact same request again.
 
-❌ 500 Internal Server Error
-✅ Gemini had an unexpected crash internal error.
+❌ 503 UNAVAILABLE
+✅ Too many people are using Gemini right now. Wait a few minutes and try again.
+
+❌ 504 Timeout
+✅ Gemini took too long to reply. Wait a moment and try again.
+```
+
+### Network Errors
+```
+❌ ConnectionError
+✅ Could not reach Gemini. Check your internet connection and try again.
+
+❌ SSLError
+✅ A secure connection to Gemini failed. Check your internet or try a 
+   different network.
 ```
 
 ### Frontend Errors
 ```
 ❌ blocked by CORS policy
-✅ Even though the frontend and backend both are localhost, but they have
-   different ports so better use CORS(app) to overcome this problem.
+✅ Your browser is blocking the request because your frontend and backend 
+   are on different ports. Install flask-cors and add CORS(app) to your Flask file.
 
 ❌ SyntaxError: Unexpected token
-✅ The Flask server crashed and sent an Internal Server Error webpage
-   instead of JSON. Check the terminal for python crash.
+✅ Your Flask server crashed and sent back an error page instead of data. 
+   Check your terminal — the real error is printed there.
 ```
 
 ---
@@ -208,10 +265,10 @@ This prints all models your API key can access.
 
 ```
 Works with:
-✅ PDF Summarizer    (extract text first, pass as string)
-✅ Chatbot           (conversation as plain string)
-✅ Text Summarizer   (plain text input)
-✅ CSV Analyzer      (convert to string with df.to_string())
+✅ PDF Summarizer      (extract text first, pass as string)
+✅ Chatbot             (conversation as plain string)
+✅ Text Summarizer     (plain text input)
+✅ CSV Analyzer        (convert to string with df.to_string())
 ✅ Any project where input to Gemini is plain text
 
 Coming in v2.0:
@@ -219,6 +276,8 @@ Coming in v2.0:
 🔜 Audio support
 🔜 Video support
 ```
+
+---
 
 ## Check Version
 
@@ -233,6 +292,4 @@ print(gemconnect.__version__)
 
 This library was not built from assumptions. Every error message inside GemConnect was collected from real beginner projects — PDF summarizer, chatbot, image describer, audio transcriber. Each scary error was faced, documented, and translated into a simple message.
 
----
-
-*GemConnect v1.0 — Built from real beginner mistakes, for real beginners.*
+**GemConnect v1.0 — Built from real beginner mistakes, for real beginners.**
