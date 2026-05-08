@@ -19,4 +19,5 @@ authors = [
 Homepage = "https://github.com/DIVICODER/gemconnect-lib-"
 
 [tool.setuptools]
+package-dir = {"" = "GemConnect"}
 packages = ["gemconnect"]
