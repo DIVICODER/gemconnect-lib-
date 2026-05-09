@@ -12,7 +12,7 @@ readme = "README.md"
 requires-python = ">=3.8"
 dependencies = []
 authors = [
-    {name = "Divya P", email = "divyaprofessional416@email.com"}
+    {name = "Divya P", email = "131283175+DIVICODER@users.noreply.github.com"}
 ]
 
 [project.urls]
